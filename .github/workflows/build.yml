@@ -8,8 +8,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-20.04
+  build:
+    strategy:
+      matrix:
+        include:
+          - name: linux
+            runs-on: ubuntu-20.04
+            artifact: vitasdk-linux
+            tag_suffix: linux
+          - name: linux-arm64
+            runs-on: ubuntu-24.04-arm
+            artifact: vitasdk-linux-arm64
+            tag_suffix: linux-arm64
+    runs-on: ${{ matrix.runs-on }}
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
@@ -36,7 +47,7 @@ jobs:
       if: ${{ success() }}
       uses: actions/upload-artifact@v4
       with:
-        name: vitasdk-linux
+        name: ${{ matrix.artifact }}
         path: buildscripts/build/*.tar.bz2
     - uses: svenstaro/upload-release-action@v2
       if: contains(github.ref,'refs/heads/master')
@@ -45,47 +56,8 @@ jobs:
         file: buildscripts/build/*.tar.bz2
         overwrite: true
         file_glob: true
-        tag: master-linux-v2.${{github.run_number}}     
-        release_name: master-linux-v2.${{github.run_number}}
-  build-linux-arm64:
-    runs-on: ubuntu-24.04-arm
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y software-properties-common
-        sudo apt-get install -y cmake cmake-data git build-essential autoconf automake libtool texinfo bison flex pkg-config
-    - name: Clone
-      run: |
-        export REV=dirty-$(git describe --always)
-        git clone https://github.com/vitasdk/buildscripts.git
-        chmod +x *.sh
-    - name: Build
-      run: |
-        cd buildscripts
-        git config --global user.email "builds@travis-ci.com"
-        git config --global user.name "Travis CI"
-        mkdir build
-        cd build
-        cmake ..
-        make -j$(nproc) tarball
-    - name: Upload artifacts
-      if: ${{ success() }}
-      uses: actions/upload-artifact@v4
-      with:
-        name: vitasdk-linux-arm64
-        path: buildscripts/build/*.tar.bz2
-    - uses: svenstaro/upload-release-action@v2
-      if: contains(github.ref,'refs/heads/master')
-      with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: buildscripts/build/*.tar.bz2
-        overwrite: true
-        file_glob: true
-        tag: master-linux-arm64-v2.${{github.run_number}}     
-        release_name: master-linux-arm64-v2.${{github.run_number}}
+        tag: master-${{ matrix.tag_suffix }}-v2.${{ github.run_number }}     
+        release_name: master-${{ matrix.tag_suffix }}-v2.${{ github.run_number }}
   build-macos:
     runs-on: macos-12
     steps:
