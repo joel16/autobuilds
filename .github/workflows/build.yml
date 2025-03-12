@@ -44,6 +44,10 @@ jobs:
           export REV=dirty-$(git describe --always)
           git clone https://github.com/vitasdk/buildscripts.git
           chmod +x *.sh
+      - name: Update config.sub and config.guess
+        run: |
+          wget -O /home/runner/work/autobuilds/autobuilds/buildscripts/build/libelf_build-prefix/src/libelf_build/config.sub https://git.savannah.gnu.org/cgit/config.git/plain/config.sub
+          wget -O /home/runner/work/autobuilds/autobuilds/buildscripts/build/libelf_build-prefix/src/libelf_build/config.guess https://git.savannah.gnu.org/cgit/config.git/plain/config.guess
       - name: Build
         run: |
           cd buildscripts
